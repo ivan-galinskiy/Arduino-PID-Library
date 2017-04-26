@@ -34,7 +34,7 @@ PID::PID(double* Input, double* Output, double* Setpoint,
     PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd);
 
-    lastTime = millis()-SampleTime;				
+    lastTime = micros()-SampleTime;				
 }
  
  
@@ -47,7 +47,7 @@ PID::PID(double* Input, double* Output, double* Setpoint,
 bool PID::Compute()
 {
    if(!inAuto) return false;
-   unsigned long now = millis();
+   unsigned long now = micros();
    unsigned long timeChange = (now - lastTime);
    if(timeChange>=SampleTime)
    {
@@ -86,7 +86,7 @@ void PID::SetTunings(double Kp, double Ki, double Kd)
  
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
    
-   double SampleTimeInSec = ((double)SampleTime)/1000;  
+   double SampleTimeInSec = ((double)SampleTime)/1e6;  
    kp = Kp;
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
@@ -100,7 +100,7 @@ void PID::SetTunings(double Kp, double Ki, double Kd)
 }
   
 /* SetSampleTime(...) *********************************************************
- * sets the period, in Milliseconds, at which the calculation is performed	
+ * sets the period, in microseconds, at which the calculation is performed	
  ******************************************************************************/
 void PID::SetSampleTime(int NewSampleTime)
 {
