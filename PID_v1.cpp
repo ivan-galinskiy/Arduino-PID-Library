@@ -4,6 +4,9 @@
  *
  * This Library is licensed under a GPLv3 License
  **********************************************************************************************/
+ 
+ // Additional changes by Ivan Galinskiy. Note: this library and the original
+ // are NOT compatible
 
 #if ARDUINO >= 100
   #include "Arduino.h"
@@ -13,10 +16,7 @@
 
 #include <PID_v1.h>
 
-/*Constructor (...)*********************************************************
- *    The parameters specified here are those for for which we can't set up 
- *    reliable defaults, so we need to have the user set them.
- ***************************************************************************/
+// Main class
 PID::PID(double* Input, double* Output, double* Setpoint,
         double Kp, double Ki, double Kd)
 {
@@ -24,44 +24,55 @@ PID::PID(double* Input, double* Output, double* Setpoint,
     myOutput = Output;
     myInput = Input;
     mySetpoint = Setpoint;
+	
+	// Controller disabled by default
 	inAuto = false;
 	
-	PID::SetOutputLimits(0, 255);				//default output limit corresponds to 
-												//the arduino pwm limits
+	// Set output limits to Arduino PWM limits
+	PID::SetOutputLimits(0, 255);
 
-    SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
+	// Default sample time is 0.1 seconds
+    SampleTime = 1e6/10;
+	
     PID::SetTunings(Kp, Ki, Kd);
 
-    lastTime = micros()-SampleTime;				
+    lastTime = micros() - SampleTime;				
 }
  
  
-/* Compute() **********************************************************************
- *     This, as they say, is where the magic happens.  this function should be called
- *   every time "void loop()" executes.  the function will decide for itself whether a new
- *   pid Output needs to be computed.  returns true when the output is computed,
- *   false when nothing has been done.
- **********************************************************************************/ 
+// Compute and set the output value. Returns true if a calculation has been performed, false otherwise. 
 bool PID::Compute()
 {
-   if(!inAuto) return false;
    unsigned long now = micros();
    unsigned long timeChange = (now - lastTime);
-   if(timeChange>=SampleTime)
+   
+   if(!inAuto) 
+	   return false;
+   
+   if(timeChange >= SampleTime)
    {
-      /*Compute all the working error variables*/
 	  double input = *myInput;
+	  
+	  // Error value (as defined in most control literature
       double error = *mySetpoint - input;
+	  
+	  // Integral term with saturation
       ITerm += (ki * error);
-      if(ITerm > outMax) ITerm= outMax;
-      else if(ITerm < outMin) ITerm= outMin;
+      if (ITerm > outMax) 
+		  ITerm = outMax;
+      else if (ITerm < outMin) 
+		  ITerm = outMin;
+	  
+	  // Differential term. Note that we are not differentiating the error,
+	  // but the input (avoiding derivative kicks with setpoint changes)
       double dInput = (input - lastInput);
  
-      /*Compute PID Output*/
-      double output = kp * error + ITerm- kd * dInput;
+      // PID Output
+      double output = kp * error + ITerm + kd * dInput;
       
-	  if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
+	  if (output > outMax) 
+		  output = outMax;
+      else if (output < outMin) output = outMin;
 	  *myOutput = output;
 	  
       /*Remember some variables for next time*/
@@ -73,14 +84,12 @@ bool PID::Compute()
 }
 
 
-/* SetTunings(...)*************************************************************
- * This function allows the controller's dynamic performance to be adjusted. 
- * it's called automatically from the constructor, but tunings can also
- * be adjusted on the fly during normal operation
- ******************************************************************************/ 
+
 void PID::SetTunings(double Kp, double Ki, double Kd)
 {
-   dispKp = Kp; dispKi = Ki; dispKd = Kd;
+   fullKp = Kp; 
+   fullKi = Ki; 
+   fullKd = Kd;
    
    double SampleTimeInSec = ((double)SampleTime)/1e6;  
    kp = Kp;
@@ -88,42 +97,36 @@ void PID::SetTunings(double Kp, double Ki, double Kd)
    kd = Kd / SampleTimeInSec;
 }
   
-/* SetSampleTime(...) *********************************************************
- * sets the period, in microseconds, at which the calculation is performed	
- ******************************************************************************/
-void PID::SetSampleTime(int NewSampleTime)
+// Set the sampling time (must be supplied in seconds)
+void PID::SetSampleTime(double NewSampleTime)
 {
    if (NewSampleTime > 0)
    {
-      double ratio  = (double)NewSampleTime
-                      / (double)SampleTime;
-      ki *= ratio;
-      kd /= ratio;
-      SampleTime = (unsigned long)NewSampleTime;
+      SampleTime = (unsigned long) (NewSampleTime*1e6);
+	  PID::SetTunings(fullKp, fullKi, fullKd);
    }
 }
  
-/* SetOutputLimits(...)****************************************************
- *     This function will be used far more often than SetInputLimits.  while
- *  the input to the controller will generally be in the 0-1023 range (which is
- *  the default already,)  the output will be a little different.  maybe they'll
- *  be doing a time window and will need 0-8000 or something.  or maybe they'll
- *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
- *  here.
- **************************************************************************/
+// Set the output limits of the PID output
 void PID::SetOutputLimits(double Min, double Max)
 {
+	// Sanity check
    if(Min >= Max) return;
    outMin = Min;
    outMax = Max;
  
    if(inAuto)
    {
-	   if(*myOutput > outMax) *myOutput = outMax;
-	   else if(*myOutput < outMin) *myOutput = outMin;
+	   // If the new limits saturate the current outputs, apply that
+	   if (*myOutput > outMax) 
+		   *myOutput = outMax;
+	   else if (*myOutput < outMin) 
+		   *myOutput = outMin;
 	 
-	   if(ITerm > outMax) ITerm= outMax;
-	   else if(ITerm < outMin) ITerm= outMin;
+	   if (ITerm > outMax) 
+		   ITerm= outMax;
+	   else if (ITerm < outMin) 
+		   ITerm= outMin;
    }
 }
 
@@ -148,7 +151,7 @@ void PID::SetMode(int Mode)
  ******************************************************************************/ 
 void PID::Initialize()
 {
-   ITerm = *myOutput;
+   ITerm = 0;
    lastInput = *myInput;
    if(ITerm > outMax) ITerm = outMax;
    else if(ITerm < outMin) ITerm = outMin;

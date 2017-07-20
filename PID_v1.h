@@ -49,13 +49,15 @@ class PID
   private:
 	void Initialize();
 	
-	double dispKp;				// * we'll hold on to the tuning parameters in user-entered 
-	double dispKi;				//   format for display purposes
-	double dispKd;				//
+	// Full-form tunings (time scaling not applied)
+	double fullKp;
+	double fullKi;
+	double fullKd;
     
+	// Time-scaled tunings (for faster internal calculations)
 	double kp;                  // * (P)roportional Tuning Parameter
-    double ki;                  // * (I)ntegral Tuning Parameter
-    double kd;                  // * (D)erivative Tuning Parameter
+    double ki;                  // * (I)ntegral Tuning Parameter, time scale applied
+    double kd;                  // * (D)erivative Tuning Parameter, time scale applied
 
     double *myInput;              // * Pointers to the Input, Output, and Setpoint variables
     double *myOutput;             //   This creates a hard link between the variables and the 
