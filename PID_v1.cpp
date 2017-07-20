@@ -148,10 +148,12 @@ void PID::SetMode(int Mode)
 /* Initialize()****************************************************************
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
- ******************************************************************************/ 
+ ******************************************************************************/
+ // Important: before turning on the PID, set the Output variable to the
+ // desired bias. Then, the transfer will be bumpless.
 void PID::Initialize()
 {
-   ITerm = 0;
+   ITerm = *myOutput;
    lastInput = *myInput;
    if(ITerm > outMax) ITerm = outMax;
    else if(ITerm < outMin) ITerm = outMin;
@@ -162,8 +164,8 @@ void PID::Initialize()
  * functions query the internal state of the PID.  they're here for display 
  * purposes.  this are the functions the PID Front-end uses for example
  ******************************************************************************/
-double PID::GetKp(){ return  dispKp; }
-double PID::GetKi(){ return  dispKi;}
-double PID::GetKd(){ return  dispKd;}
+double PID::GetKp(){ return  fullKp; }
+double PID::GetKi(){ return  fullKi;}
+double PID::GetKd(){ return  fullKd;}
 int PID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
 
