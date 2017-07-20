@@ -18,7 +18,7 @@
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
 PID::PID(double* Input, double* Output, double* Setpoint,
-        double Kp, double Ki, double Kd, int ControllerDirection)
+        double Kp, double Ki, double Kd)
 {
 	
     myOutput = Output;
@@ -30,8 +30,6 @@ PID::PID(double* Input, double* Output, double* Setpoint,
 												//the arduino pwm limits
 
     SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
-
-    PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd);
 
     lastTime = micros()-SampleTime;				
@@ -54,7 +52,7 @@ bool PID::Compute()
       /*Compute all the working error variables*/
 	  double input = *myInput;
       double error = *mySetpoint - input;
-      ITerm+= (ki * error);
+      ITerm += (ki * error);
       if(ITerm > outMax) ITerm= outMax;
       else if(ITerm < outMin) ITerm= outMin;
       double dInput = (input - lastInput);
@@ -82,21 +80,12 @@ bool PID::Compute()
  ******************************************************************************/ 
 void PID::SetTunings(double Kp, double Ki, double Kd)
 {
-   if (Kp<0 || Ki<0 || Kd<0) return;
- 
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
    
    double SampleTimeInSec = ((double)SampleTime)/1e6;  
    kp = Kp;
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
- 
-  if(controllerDirection ==REVERSE)
-   {
-      kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
-   }
 }
   
 /* SetSampleTime(...) *********************************************************
@@ -165,23 +154,6 @@ void PID::Initialize()
    else if(ITerm < outMin) ITerm = outMin;
 }
 
-/* SetControllerDirection(...)*************************************************
- * The PID will either be connected to a DIRECT acting process (+Output leads 
- * to +Input) or a REVERSE acting process(+Output leads to -Input.)  we need to
- * know which one, because otherwise we may increase the output when we should
- * be decreasing.  This is called from the constructor.
- ******************************************************************************/
-void PID::SetControllerDirection(int Direction)
-{
-   if(inAuto && Direction !=controllerDirection)
-   {
-	  kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
-   }   
-   controllerDirection = Direction;
-}
-
 /* Status Funcions*************************************************************
  * Just because you set the Kp=-1 doesn't mean it actually happened.  these
  * functions query the internal state of the PID.  they're here for display 
@@ -191,5 +163,4 @@ double PID::GetKp(){ return  dispKp; }
 double PID::GetKi(){ return  dispKi;}
 double PID::GetKd(){ return  dispKd;}
 int PID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
-int PID::GetDirection(){ return controllerDirection;}
 

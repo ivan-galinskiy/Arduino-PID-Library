@@ -1,6 +1,6 @@
 A slightly modified version of Brett Beauregard's Arduino PID library (original description in the end of this README). The changes are:
 
-1. Timing in microseconds instead of milliseconds. This allows a faster update rate (> kHz). The sample time can be set to 0 so that the PID processes the data as fast as it can and measures the sample time internally.
+1. Timing in microseconds instead of milliseconds. This allows a faster update rate (> 1 kHz). The sample time can be set to 0 so that the PID processes the data as fast as it can and measures the sample time internally.
 
 2. "Controller direction" has been removed. Instead, the sign of the tunings (which is no longer forced to be positive) determines the response.
 

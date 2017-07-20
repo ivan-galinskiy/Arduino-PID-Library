@@ -16,7 +16,7 @@ class PID
 
   //commonly used functions **************************************************************************
     PID(double*, double*, double*,        // * constructor.  links the PID to the Input, Output, and 
-        double, double, double, int);     //   Setpoint.  Initial tuning parameters are also set here
+        double, double, double);     //   Setpoint.  Initial tuning parameters are also set here
 	
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
@@ -35,10 +35,6 @@ class PID
     void SetTunings(double, double,       // * While most users will set the tunings once in the 
                     double);         	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(int);	  // * Sets the Direction, or "Action" of the controller. DIRECT
-										  //   means the output will increase when error is positive. REVERSE
-										  //   means the opposite.  it's very unlikely that this will be needed
-										  //   once it is set in the constructor.
     void SetSampleTime(int);              // * sets the frequency, in microseconds, with which 
                                           //   the PID calculation is performed.  default is 100
 										  
@@ -49,7 +45,6 @@ class PID
 	double GetKi();						  //  they were created mainly for the pid front-end,
 	double GetKd();						  // where it's important to know what is actually 
 	int GetMode();						  //  inside the PID.
-	int GetDirection();					  //
 
   private:
 	void Initialize();
@@ -61,8 +56,6 @@ class PID
 	double kp;                  // * (P)roportional Tuning Parameter
     double ki;                  // * (I)ntegral Tuning Parameter
     double kd;                  // * (D)erivative Tuning Parameter
-
-	int controllerDirection;
 
     double *myInput;              // * Pointers to the Input, Output, and Setpoint variables
     double *myOutput;             //   This creates a hard link between the variables and the 
